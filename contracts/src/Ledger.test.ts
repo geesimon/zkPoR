@@ -1,12 +1,3 @@
-
-describe('Ledger.js', () => {
-  describe('Ledger()', () => {
-    it.todo('should be correct');
-  });
-});
-
-
-import {Ledger} from './Ledger';
 import {
   isReady,
   shutdown,
@@ -16,19 +7,23 @@ import {
   PublicKey,
   AccountUpdate,
 } from 'snarkyjs';
+import {Ledger} from './Ledger';
+import {loadAccounts, Account, AccountMap} from './Ledger-lib'
 
-
-let proofsEnabled = false;
+const proofsEnabled = false;
+const accountFileName = "./accounts.json";
 
 describe('Ledger', () => {
   let deployerAccount: PrivateKey,
     zkAppAddress: PublicKey,
     zkAppPrivateKey: PrivateKey,
-    zkApp: Ledger;
+    zkApp: Ledger,
+    accounts: AccountMap;
 
   beforeAll(async () => {
     await isReady;
     if (proofsEnabled) Ledger.compile();
+    await initAccounts();
   });
 
   beforeEach(() => {
@@ -46,6 +41,13 @@ describe('Ledger', () => {
     // This should be fixed with https://github.com/MinaProtocol/mina/issues/10943
     setTimeout(shutdown, 0);
   });
+
+  async function initAccounts() {
+    const accounts = await loadAccounts(accountFileName);
+
+    console.log("id:", accounts[1000].id.toString());
+    console.log("balance_0", accounts[1000].balances[0].toString());
+  }
 
   async function localDeploy() {
     const txn = await Mina.transaction(deployerAccount, () => {

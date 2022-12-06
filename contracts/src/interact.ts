@@ -14,7 +14,7 @@
  */
 import { Mina, PrivateKey, shutdown } from 'snarkyjs';
 import fs from 'fs/promises';
-import { Add } from './Add.js';
+import {Ledger} from './Ledger';
 
 // check command line arg
 let network = process.argv[2];
@@ -42,16 +42,16 @@ let zkAppKey = PrivateKey.fromBase58(key.privateKey);
 const Network = Mina.Network(config.url);
 Mina.setActiveInstance(Network);
 let zkAppAddress = zkAppKey.toPublicKey();
-let zkApp = new Add(zkAppAddress);
+let zkApp = new Ledger(zkAppAddress);
 
 // compile the contract to create prover keys
 console.log('compile the contract...');
-await Add.compile();
+await Ledger.compile();
 
 // call update() and send transaction
 console.log('build transaction and create proof...');
 let tx = await Mina.transaction({ feePayerKey: zkAppKey, fee: 0.1e9 }, () => {
-  zkApp.update();
+  // zkApp.update();
 });
 await tx.prove();
 console.log('send transaction...');

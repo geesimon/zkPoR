@@ -5,7 +5,13 @@ import {
     State,
     method,
     PublicKey,
+    Circuit,
+    Struct,
+    Poseidon
   } from 'snarkyjs';
+
+import {NumberOfTokens} from './Ledger-lib.js'
+
 
 
 export class Ledger extends SmartContract {    
