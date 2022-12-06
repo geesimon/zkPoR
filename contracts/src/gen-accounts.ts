@@ -1,8 +1,8 @@
 import {generateRandomAccountsFile, loadAccounts, totalBalances} from './Ledger-lib.js'
 
-const accountFileName = "./accounts.json";
+const accountFileName = "../test-accounts.json";
 
-// await generateRandomAccountsFile(accountFileName);
+await generateRandomAccountsFile(accountFileName);
 
 const accounts = await loadAccounts(accountFileName);
 

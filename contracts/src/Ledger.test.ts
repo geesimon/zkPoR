@@ -11,7 +11,7 @@ import {Ledger} from './Ledger';
 import {loadAccounts, Account, AccountMap} from './Ledger-lib'
 
 const proofsEnabled = false;
-const accountFileName = "./accounts.json";
+const accountFileName = "../test-accounts.json";
 
 describe('Ledger', () => {
   let deployerAccount: PrivateKey,
@@ -45,8 +45,7 @@ describe('Ledger', () => {
   async function initAccounts() {
     const accounts = await loadAccounts(accountFileName);
 
-    console.log("id:", accounts[1000].id.toString());
-    console.log("balance_0", accounts[1000].balances[0].toString());
+    console.log("balance_0", accounts.get(1000).balances[0].toString());
   }
 
   async function localDeploy() {
