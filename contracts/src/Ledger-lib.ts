@@ -3,7 +3,8 @@ import {
     Field,
     Poseidon,
     Struct,
-    Circuit
+    Circuit,
+    MerkleMap
 } from 'snarkyjs';
 
 export const NumberOfTokens = 4;
@@ -39,7 +40,34 @@ export class Account extends Struct({
     }
 }
 
-export async function loadAccounts(fileName: string) {
+export class TotalAccountBalances extends Struct({
+    balances: Circuit.array(Field, NumberOfTokens)    
+}){
+    constructor() {
+        super({balances: Array(NumberOfTokens).fill(0).map(Field)});
+    }
+
+    add(account: Account){
+        account.balances.forEach((v, i) =>{
+            this.balances[i] = this.balances[i].add(v);
+        })
+    };
+
+    sub(account: Account, checkConstraint = true){
+        account.balances.forEach((v, i) =>{
+            if (checkConstraint) {
+                this.balances[i].assertGte(v);
+            }
+            this.balances[i] = this.balances[i].sub(v);
+        })
+    };
+
+    hash() {
+        return Poseidon.hash(this.balances);
+    };
+};
+
+export async function loadAccounts(fileName: string): Promise<AccountMap> {
     const savedAccounts = JSON.parse(await fs.readFile(fileName, 'utf8'));
     let balances : number[] = Array(NumberOfTokens).fill(0);
 
@@ -54,13 +82,11 @@ export async function loadAccounts(fileName: string) {
     }, new Map<number, Account>());
 }
 
-export function totalBalances(accounts: AccountMap) {
-    let totalBalances = Array(NumberOfTokens).fill(0).map(Field);
+export function calcTotalBalances(accounts: AccountMap) {
+    let totalBalances = new TotalAccountBalances();
 
     accounts.forEach(account =>{
-        totalBalances.forEach((_, i) =>{
-            totalBalances[i] = totalBalances[i].add(account.balances[i])
-        })
+        totalBalances.add(account);
     });
 
     return totalBalances;
@@ -81,8 +107,18 @@ export function generateRandomAccounts(amount: number){
     });
 }
 
-export async function generateRandomAccountsFile(fileName: string) {
-    const accounts = generateRandomAccounts(100);
+export async function generateRandomAccountsFile(fileName: string, amount: number) {
+    const accounts = generateRandomAccounts(amount);
 
     await fs.writeFile(fileName, JSON.stringify(accounts));
+}
+
+export function buildAccountMerkleTree(accounts: AccountMap) {
+    let tree = new MerkleMap();
+
+    accounts.forEach(account =>{
+        tree.set(account.id, account.hash());
+    })
+
+    return tree;
 }

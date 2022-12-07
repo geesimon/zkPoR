@@ -5,20 +5,17 @@ import {
     State,
     method,
     PublicKey,
-    Circuit,
-    Struct,
+    MerkleMapWitness,
     Poseidon
   } from 'snarkyjs';
-
-import {NumberOfTokens} from './Ledger-lib.js'
-
+import {Account, TotalAccountBalances } from './Ledger-lib';
 
 
-export class Ledger extends SmartContract {    
-    @state(Field) balanceRoot = State<Field>();
-    @state(Field) accountRoot = State<Field>();
+export class Ledger extends SmartContract {        
+    @state(Field) accountTreeRoot = State<Field>();
+    @state(Field) totalBalancesHash = State<Field>();
     @state(PublicKey) oraclePublicKey = State<PublicKey>();
-    @state(Field) oracleBalance = State<Field>();
+    @state(Field) oracleBalancesHash = State<Field>();
   
     // deploy(args: DeployArgs) {
     //     super.deploy(args);
@@ -29,19 +26,70 @@ export class Ledger extends SmartContract {
     // }
 
     @method initState(
-            balanceRoot: Field,
-            accountRoot: Field,
+            accountTreeRoot: Field,
+            totalBalancesHash: Field,            
             oraclePublicKey: PublicKey,
-            oracleBalance: Field
+            oracleBalancesHash: Field
             ) {        
-        this.balanceRoot.set(balanceRoot);
-        this.accountRoot.set(accountRoot);
+        this.accountTreeRoot.set(accountTreeRoot);
+        this.totalBalancesHash.set(totalBalancesHash);
         this.oraclePublicKey.set(oraclePublicKey);
-        this.oracleBalance.set(oracleBalance);
+        this.oracleBalancesHash.set(oracleBalancesHash);
     }
     
-    @method updateAccount() {
+    @method addAccount(
+                        account: Account, 
+                        path: MerkleMapWitness,
+                        totalBalances: TotalAccountBalances
+                        ) {
+        // Add account
+        const currentRoot = this.accountTreeRoot.get();
+        this.accountTreeRoot.assertEquals(currentRoot);
 
+        const newRoot = path.computeRootAndKey(account.hash())[0];
+        this.accountTreeRoot.set(newRoot);
+
+        // Update balance
+        const currentBalancesHash = this.totalBalancesHash.get();
+        this.totalBalancesHash.assertEquals(currentBalancesHash);
+        currentBalancesHash.assertEquals(Field(Poseidon.hash(totalBalances.balances)), 'Balance: ' + 
+                                                                                totalBalances.balances[0].toString() + ',' 
+                                                                                + totalBalances.balances[1].toString() + ','
+                                                                                + totalBalances.balances[2].toString() + ','
+                                                                                + totalBalances.balances[3].toString());
+
+        // totalBalances.add(account);
+        this.totalBalancesHash.set(totalBalances.hash());
+    }
+
+    @method updateAccount(
+                            oldAcount: Account,
+                            oldPath: MerkleMapWitness,
+                            newAccount: Account,
+                            totalBalances: TotalAccountBalances
+                        ): TotalAccountBalances {
+        //Account id must be the same
+        oldAcount.id.assertEquals(newAccount.id);
+
+        //Update merkle root
+        const currentRoot = this.accountTreeRoot.get();
+        this.accountTreeRoot.assertEquals(currentRoot);
+        
+        oldPath.computeRootAndKey(oldAcount.hash())[0].assertEquals(currentRoot);
+        
+        const newRoot = oldPath.computeRootAndKey(newAccount.hash())[0];
+        this.accountTreeRoot.set(newRoot);
+
+        //Update total balances
+        const currentBalancesHash = this.totalBalancesHash.get();
+        this.totalBalancesHash.assertEquals(currentBalancesHash);
+        this.totalBalancesHash.assertEquals(totalBalances.hash());
+
+        totalBalances.sub(oldAcount);
+        
+        this.totalBalancesHash.set(totalBalances.hash());
+
+        return totalBalances;
     }
 
     @method updateOracleBalance() {
