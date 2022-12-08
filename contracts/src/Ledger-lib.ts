@@ -4,7 +4,9 @@ import {
     Poseidon,
     Struct,
     Circuit,
-    MerkleMap
+    MerkleMap,
+    PublicKey,
+    Signature,
 } from 'snarkyjs';
 
 export const NumberOfTokens = 4;
@@ -74,6 +76,22 @@ export class TotalAccountBalances extends Struct({
         return Poseidon.hash(this.balances);
     };
 };
+
+export class OracleBalances extends Struct({
+    balances: Circuit.array(Field, NumberOfTokens)    
+}){
+    constructor() {
+        super({balances: Array(NumberOfTokens).fill(0).map(Field)});
+    }
+
+    verify(publicKey: PublicKey, signature: Signature){
+        return signature.verify(publicKey, this.balances);
+    }
+
+    hash() {
+        return Poseidon.hash(this.balances);
+    };
+}
 
 export async function loadAccounts(fileName: string): Promise<AccountMap> {
     const savedAccounts = JSON.parse(await fs.readFile(fileName, 'utf8'));

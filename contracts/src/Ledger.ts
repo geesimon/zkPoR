@@ -6,9 +6,9 @@ import {
     method,
     PublicKey,
     MerkleMapWitness,
-    Poseidon
+    Signature,
   } from 'snarkyjs';
-import {Account, TotalAccountBalances } from './Ledger-lib';
+import {Account, TotalAccountBalances, OracleBalances } from './Ledger-lib';
 
 
 export class Ledger extends SmartContract {        
@@ -30,7 +30,7 @@ export class Ledger extends SmartContract {
             totalBalancesHash: Field,            
             oraclePublicKey: PublicKey,
             oracleBalancesHash: Field
-            ) {        
+            ) {
         this.accountTreeRoot.set(accountTreeRoot);
         this.totalBalancesHash.set(totalBalancesHash);
         this.oraclePublicKey.set(oraclePublicKey);
@@ -96,7 +96,13 @@ export class Ledger extends SmartContract {
         root.assertEquals(currentRoot, 'Invalid Merkel Root');
     }
 
-    @method updateOracleBalance() {
+    @method updateOracleBalance(oracleBalances: OracleBalances, signature: Signature) {
+        const oraclePublicKey = this.oraclePublicKey.get();
+        this.oraclePublicKey.assertEquals(oraclePublicKey);
 
+        const validSignature = oracleBalances.verify(oraclePublicKey, signature);
+        validSignature.assertTrue('Bad Signature');
+
+        this.oracleBalancesHash.set(oracleBalances.hash());
     }
 }

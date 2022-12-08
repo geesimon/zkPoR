@@ -5,15 +5,7 @@ import {
         buildAccountMerkleTree
         } from './Ledger-lib.js'
 
-import {
-            SmartContract,
-            Field,
-            state,
-            State,
-            method,
-            PublicKey,
-            MerkleMapWitness
-} from 'snarkyjs';        
+import { Field } from 'snarkyjs';        
 import {Account} from "./Ledger-lib.js";
 
 const accountFileName = "../test-accounts.json";
