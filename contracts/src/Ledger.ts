@@ -40,7 +40,8 @@ export class Ledger extends SmartContract {
     @method addAccount(
                         account: Account, 
                         path: MerkleMapWitness,
-                        totalBalances: TotalAccountBalances
+                        totalAccountBalances: TotalAccountBalances,
+                        oracleBalances: OracleBalances
                         ) {
         // Add account
         const currentRoot = this.accountTreeRoot.get();
@@ -52,20 +53,23 @@ export class Ledger extends SmartContract {
         // Update balance
         const currentBalancesHash = this.totalBalancesHash.get();
         this.totalBalancesHash.assertEquals(currentBalancesHash);
-        this.totalBalancesHash.assertEquals(totalBalances.hash());
+        this.totalBalancesHash.assertEquals(totalAccountBalances.hash());
 
-        const newBalances =  totalBalances.add(account);
+        const newBalances =  totalAccountBalances.add(account);
         this.totalBalancesHash.set(newBalances.hash());
+        
+        this.checkBalances(oracleBalances, totalAccountBalances);
     }
 
     @method updateAccount(
                             oldAcount: Account,
                             oldPath: MerkleMapWitness,
-                            newAccount: Account,
-                            totalBalances: TotalAccountBalances
+                            updatedAccount: Account,
+                            totalAccountBalances: TotalAccountBalances,
+                            oracleBalances: OracleBalances
                         ) {
         //Account id must be the same
-        oldAcount.id.assertEquals(newAccount.id);
+        oldAcount.id.assertEquals(updatedAccount.id);
 
         //Update merkle root
         const currentRoot = this.accountTreeRoot.get();
@@ -73,17 +77,19 @@ export class Ledger extends SmartContract {
         
         oldPath.computeRootAndKey(oldAcount.hash())[0].assertEquals(currentRoot);
         
-        const newRoot = oldPath.computeRootAndKey(newAccount.hash())[0];
+        const newRoot = oldPath.computeRootAndKey(updatedAccount.hash())[0];
         this.accountTreeRoot.set(newRoot);
 
         //Update total balances
         const currentBalancesHash = this.totalBalancesHash.get();
         this.totalBalancesHash.assertEquals(currentBalancesHash);
-        this.totalBalancesHash.assertEquals(totalBalances.hash());
+        this.totalBalancesHash.assertEquals(totalAccountBalances.hash());
 
-        let newBalances = totalBalances.sub(oldAcount).add(newAccount);
+        let newBalances = totalAccountBalances.sub(oldAcount).add(updatedAccount);
         
         this.totalBalancesHash.set(newBalances.hash());
+
+        this.checkBalances(oracleBalances, totalAccountBalances);
     }
 
     @method verifyAccount(account: Account, path: MerkleMapWitness) {
@@ -104,5 +110,17 @@ export class Ledger extends SmartContract {
         validSignature.assertTrue('Bad Signature');
 
         this.oracleBalancesHash.set(oracleBalances.hash());
+    }
+
+    // Check Oracle balance constraint
+    checkBalances(oracleBalances: OracleBalances, totalAccountBalances: TotalAccountBalances){
+       //Check account balances are less than oracle balances
+       const oracleBalancesHash = this.oracleBalancesHash.get();
+       this.oracleBalancesHash.assertEquals(oracleBalancesHash);
+       this.oracleBalancesHash.assertEquals(oracleBalances.hash());
+
+       oracleBalances.balances.forEach((_, i) => {
+           oracleBalances.balances[i].assertGte(totalAccountBalances.balances[i], 'Account Value Exceed Oracle Value:' );
+       })        
     }
 }

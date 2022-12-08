@@ -30,6 +30,7 @@ describe('Ledger', () => {
     zkApp: Ledger,
     allAccounts: AccountMap,
     totalBalances: TotalAccountBalances,
+    oracleBalances: OracleBalances,
     accountTree: MerkleMap,
     testAccountId: number;
 
@@ -43,6 +44,11 @@ describe('Ledger', () => {
     accountTree = buildAccountMerkleTree(allAccounts);    
     testAccountId = allAccounts.keys().next().value;
 
+    oracleBalances = new OracleBalances(totalBalances.balances);
+    //Set oracle balance as doule of account balance
+    oracleBalances.balances.forEach((_, i) =>{
+      oracleBalances.balances[i] = oracleBalances.balances[i].mul(2);  
+    });
     //Prepare Mina block chain
     const Local = Mina.LocalBlockchain({ proofsEnabled });
     Mina.setActiveInstance(Local);
@@ -68,7 +74,7 @@ describe('Ledger', () => {
     let txn = await Mina.transaction(deployerAccount, () => {
       AccountUpdate.fundNewAccount(deployerAccount);
       zkApp.deploy();
-      zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oracleAccount.toPublicKey(), Field(0));
+      zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oracleAccount.toPublicKey(), oracleBalances.hash());
     });
     await txn.prove();
     // this tx needs .sign(), because `deploy()` adds an account update that requires signature authorization
@@ -101,10 +107,13 @@ describe('Ledger', () => {
     const newAccountId = testAccountId * 100;
     const newAccount = Account.from(newAccountId, [100, 100, 100, 10]);
     accountTree.set(Field(newAccountId), newAccount.hash());
-    allAccounts.set(newAccountId, newAccount);   
+    allAccounts.set(newAccountId, newAccount);
 
     const txn = await Mina.transaction(deployerAccount, () => {
-      zkApp.addAccount(newAccount, accountTree.getWitness(Field(newAccountId)), totalBalances);
+      zkApp.addAccount( newAccount, 
+                        accountTree.getWitness(Field(newAccountId)), 
+                        totalBalances, 
+                        oracleBalances );
     });
     await txn.prove();
     await txn.send();
@@ -117,7 +126,7 @@ describe('Ledger', () => {
 
   it('updateds the account state and balances', async () => {
     const oldAccount = allAccounts.get(testAccountId);
-    const updatedAccount = Account.from(testAccountId, [100, 100, 100, 10]);
+    const updatedAccount = Account.from(testAccountId, [100, 100, 100, 0]);
     allAccounts.set(testAccountId, updatedAccount);
 
     accountTree.set(Field(testAccountId), updatedAccount.hash());
@@ -127,7 +136,8 @@ describe('Ledger', () => {
       zkApp.updateAccount( oldAccount!,
                             accountTree.getWitness(Field(testAccountId)), 
                             updatedAccount,
-                                                    totalBalances);
+                            totalBalances,
+                            oracleBalances);
     });
     await txn.prove();
     await txn.send();
@@ -155,11 +165,11 @@ describe('Ledger', () => {
     await txn.send();
 
     //invalidate account id
-    const badIdAccount = allAccounts.get(testAccountId);
-    badIdAccount!.id = badIdAccount!.id.add(1);
+    const testAccount = allAccounts.get(testAccountId);
+    const badIdAccount = Account.from(testAccountId + 1, testAccount!.balances.map(n => Number(n.toString())));
     await expect(async () => {
       txn = await Mina.transaction(deployerAccount, () => {
-        zkApp.verifyAccount(badIdAccount!, path);
+        zkApp.verifyAccount(badIdAccount, path);
       });
       await txn.prove();
       await txn.send();
@@ -175,35 +185,75 @@ describe('Ledger', () => {
       });
       await txn.prove();
       await txn.send();
-    }).rejects.toThrow(/Root/);
-    
+    }).rejects.toThrow(/Root/);    
   });
 
   it('takes and verifies oracle balances update', async () => {
-    const oracleBalances = new OracleBalances();
-    oracleBalances.balances.forEach((_, i) => {
-      oracleBalances.balances[i] = totalBalances.balances[i].add(10);
+    const newOracleBalances = new OracleBalances();
+
+    newOracleBalances.balances.forEach((_, i) => {
+      newOracleBalances.balances[i] = oracleBalances.balances[i].add(10);
     });
 
-    const signature = Signature.create(oracleAccount, oracleBalances.balances);
+    const signature = Signature.create(oracleAccount, newOracleBalances.balances);
 
     let txn = await Mina.transaction(deployerAccount, () => {
-      zkApp.updateOracleBalance(oracleBalances, signature);
+      zkApp.updateOracleBalance(newOracleBalances, signature);
     });
     await txn.prove();
     await txn.send();
 
-    expect(zkApp.oracleBalancesHash.get()).toEqual(oracleBalances.hash());
+    expect(zkApp.oracleBalancesHash.get()).toEqual(newOracleBalances.hash());
 
     //Should reject bad signature
-    const badSignature = Signature.create(deployerAccount, oracleBalances.balances);
+    const badSignature = Signature.create(deployerAccount, newOracleBalances.balances);
 
     await expect(async () => {
       txn = await Mina.transaction(deployerAccount, () => {
-        zkApp.updateOracleBalance(oracleBalances, badSignature);
+        zkApp.updateOracleBalance(newOracleBalances, badSignature);
       });
       await txn.prove();
       await txn.send();
     }).rejects.toThrow(/Signature/);
   });
+
+  it('prevents from adding or updating account if balances exceed oracle balances', async () => {
+    const newOracleBalances = new OracleBalances();
+
+    const signature = Signature.create(oracleAccount, newOracleBalances.balances);
+
+    let txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.updateOracleBalance(newOracleBalances, signature);
+    });
+    await txn.prove();
+    await txn.send();
+
+    const newAccountId = testAccountId * 1000;
+    const newAccount = Account.from(newAccountId, [100, 100, 100, 10]);
+    await expect(async () => {
+      txn = await Mina.transaction(deployerAccount, () => {
+        zkApp.addAccount( newAccount, 
+          accountTree.getWitness(Field(newAccountId)), 
+          totalBalances, 
+          newOracleBalances );
+      });
+      await txn.prove();
+      await txn.send();
+    }).rejects.toThrow(/Exceed/);
+
+    const oldAccount = allAccounts.get(testAccountId);
+    const updatedAccount = Account.from(testAccountId, [100, 100, 100, 0]);
+    console.log(oldAccount!.id.toString(), updatedAccount.id.toString());
+    await expect(async () => {
+      txn = await Mina.transaction(deployerAccount, () => {
+        zkApp.updateAccount( oldAccount!,
+          accountTree.getWitness(Field(testAccountId)), 
+          updatedAccount,
+          totalBalances,
+          newOracleBalances);
+      });
+      await txn.prove();
+      await txn.send();
+    }).rejects.toThrow(/Exceed/);
+  })
 });

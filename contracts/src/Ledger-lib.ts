@@ -45,8 +45,12 @@ export class Account extends Struct({
 export class TotalAccountBalances extends Struct({
     balances: Circuit.array(Field, NumberOfTokens)    
 }){
-    constructor() {
-        super({balances: Array(NumberOfTokens).fill(0).map(Field)});
+    constructor(balances?: Field[]) {
+        if (typeof balances !== 'undefined') {
+            super({balances: balances.map(Field)});
+        } else {
+            super({balances: Array(NumberOfTokens).fill(0).map(Field)});
+        }
     }
 
     add(account: Account){
@@ -80,8 +84,12 @@ export class TotalAccountBalances extends Struct({
 export class OracleBalances extends Struct({
     balances: Circuit.array(Field, NumberOfTokens)    
 }){
-    constructor() {
-        super({balances: Array(NumberOfTokens).fill(0).map(Field)});
+    constructor(balances?: Field[]) {
+        if (typeof balances !== 'undefined') {
+            super({balances: balances.map(Field)});
+        } else {
+            super({balances: Array(NumberOfTokens).fill(0).map(Field)});
+        }
     }
 
     verify(publicKey: PublicKey, signature: Signature){
