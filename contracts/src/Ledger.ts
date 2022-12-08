@@ -52,14 +52,10 @@ export class Ledger extends SmartContract {
         // Update balance
         const currentBalancesHash = this.totalBalancesHash.get();
         this.totalBalancesHash.assertEquals(currentBalancesHash);
-        currentBalancesHash.assertEquals(Field(Poseidon.hash(totalBalances.balances)), 'Balance: ' + 
-                                                                                totalBalances.balances[0].toString() + ',' 
-                                                                                + totalBalances.balances[1].toString() + ','
-                                                                                + totalBalances.balances[2].toString() + ','
-                                                                                + totalBalances.balances[3].toString());
+        this.totalBalancesHash.assertEquals(totalBalances.hash());
 
-        // totalBalances.add(account);
-        this.totalBalancesHash.set(totalBalances.hash());
+        const newBalances =  totalBalances.add(account);
+        this.totalBalancesHash.set(newBalances.hash());
     }
 
     @method updateAccount(
@@ -67,7 +63,7 @@ export class Ledger extends SmartContract {
                             oldPath: MerkleMapWitness,
                             newAccount: Account,
                             totalBalances: TotalAccountBalances
-                        ): TotalAccountBalances {
+                        ) {
         //Account id must be the same
         oldAcount.id.assertEquals(newAccount.id);
 
@@ -85,11 +81,19 @@ export class Ledger extends SmartContract {
         this.totalBalancesHash.assertEquals(currentBalancesHash);
         this.totalBalancesHash.assertEquals(totalBalances.hash());
 
-        totalBalances.sub(oldAcount);
+        let newBalances = totalBalances.sub(oldAcount).add(newAccount);
         
-        this.totalBalancesHash.set(totalBalances.hash());
+        this.totalBalancesHash.set(newBalances.hash());
+    }
 
-        return totalBalances;
+    @method verifyAccount(account: Account, path: MerkleMapWitness) {
+        const currentRoot = this.accountTreeRoot.get();
+        this.accountTreeRoot.assertEquals(currentRoot);
+
+        let [root, key] = path.computeRootAndKey(account.hash())
+
+        account.id.assertEquals(key, 'Invalid Account Id');
+        root.assertEquals(currentRoot, 'Invalid Merkel Root');
     }
 
     @method updateOracleBalance() {

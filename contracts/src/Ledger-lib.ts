@@ -48,18 +48,26 @@ export class TotalAccountBalances extends Struct({
     }
 
     add(account: Account){
+        let newBalances = new TotalAccountBalances();
+                
         account.balances.forEach((v, i) =>{
-            this.balances[i] = this.balances[i].add(v);
+            newBalances.balances[i] = this.balances[i].add(v);
         })
+
+        return newBalances;
     };
 
     sub(account: Account, checkConstraint = true){
+        let newBalances = new TotalAccountBalances();
+
         account.balances.forEach((v, i) =>{
             if (checkConstraint) {
                 this.balances[i].assertGte(v);
             }
-            this.balances[i] = this.balances[i].sub(v);
+            newBalances.balances[i] = this.balances[i].sub(v);
         })
+
+        return newBalances;
     };
 
     hash() {
@@ -86,7 +94,7 @@ export function calcTotalBalances(accounts: AccountMap) {
     let totalBalances = new TotalAccountBalances();
 
     accounts.forEach(account =>{
-        totalBalances.add(account);
+        totalBalances = totalBalances.add(account);
     });
 
     return totalBalances;

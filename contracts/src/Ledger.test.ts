@@ -7,6 +7,7 @@ import {
   PublicKey,
   AccountUpdate,
   MerkleMap,
+  MerkleMapWitness,
 } from 'snarkyjs';
 import {Ledger} from './Ledger';
 import {
@@ -80,31 +81,6 @@ describe('Ledger', () => {
     expect(root).toEqual(accountTree.getRoot());
   });
 
-  // it('correctly updateds the account state and balances to `Ledger` smart contract', async () => {
-  //   await localDeploy();
-
-  //   const oldAccount = allAccounts.get(testAccountId);
-  //   const updatedAccount = Account.from(testAccountId, [100, 100, 100, 10]);
-  //   allAccounts.set(testAccountId, updatedAccount);
-
-  //   accountTree.set(Field(testAccountId), updatedAccount.hash());
-
-  //   // update transaction
-  //   const txn = await Mina.transaction(deployerAccount, () => {
-  //     const app = new Ledger(zkAppAddress);
-  //     // const newTotalBalances = app.updateAccount( oldAccount!,
-  //     //                                               accountTree.getWitness(Field(testAccountId)), 
-  //     //                                               newAccount, 
-  //     //                                               totalBalances);
-  //   });
-  //   await txn.prove();
-  //   await txn.send();
-
-  //   const newRoot = zkApp.accountTreeRoot.get();
-  //   console.log(newRoot);
-  //   // expect(newRoot).toEqual(accountTree.getRoot());
-  // });
-
   it('correctly add new account on the `Ledger` smart contract', async () => {
     await localDeploy();
 
@@ -113,22 +89,83 @@ describe('Ledger', () => {
     accountTree.set(Field(newAccountId), newAccount.hash());
     allAccounts.set(newAccountId, newAccount);   
 
-    console.log("old root:", zkApp.accountTreeRoot.get().toString());
-    console.log("Balance hash:", totalBalances.hash().toString());
-    console.log("Contract Balance hash:", zkApp.totalBalancesHash.get().toString());
-
     const txn = await Mina.transaction(deployerAccount, () => {
       zkApp.addAccount(newAccount, accountTree.getWitness(Field(newAccountId)), totalBalances);
     });
     await txn.prove();
     await txn.send();
 
-    // totalBalances.add(newAccount);
-    console.log("new root:", zkApp.accountTreeRoot.get().toString());
-    console.log("New contract balance hash:", zkApp.totalBalancesHash.get().toString());
-    console.log("Balance hash:", zkApp.totalBalancesHash.get().toString());
+    totalBalances = totalBalances.add(newAccount);
 
     const newRoot = zkApp.accountTreeRoot.get();
     expect(newRoot).toEqual(accountTree.getRoot());
+  });
+
+  it('correctly updated the account state and balances to `Ledger` smart contract', async () => {
+    await localDeploy();
+
+    const oldAccount = allAccounts.get(testAccountId);
+    const updatedAccount = Account.from(testAccountId, [100, 100, 100, 10]);
+    allAccounts.set(testAccountId, updatedAccount);
+
+    accountTree.set(Field(testAccountId), updatedAccount.hash());
+
+    // update transaction
+    const txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.updateAccount( oldAccount!,
+                            accountTree.getWitness(Field(testAccountId)), 
+                            updatedAccount,
+                                                    totalBalances);
+    });
+    await txn.prove();
+    await txn.send();
+
+    totalBalances = totalBalances.sub(oldAccount!).add(updatedAccount);
+    const newBalances = calcTotalBalances(allAccounts);
+    expect(newBalances.hash()).toEqual(totalBalances.hash());
+
+    const newAccoutTreeRoot = zkApp.accountTreeRoot.get();
+    expect(newAccoutTreeRoot).toEqual(accountTree.getRoot());
+
+    const newTotalBalancesHash = zkApp.totalBalancesHash.get();    
+    expect(newTotalBalancesHash).toEqual(totalBalances.hash());    
+  });
+
+  it('correctly verify good account and invalid account on the `Ledger` smart contract', async () => {
+    await localDeploy();
+
+    const account = allAccounts.get(testAccountId);
+    const path = accountTree.getWitness(account!.id);
+
+    // happy path
+    let txn = await Mina.transaction(deployerAccount, () => {
+      zkApp.verifyAccount(account!, path);
+    });
+    await txn.prove();
+    await txn.send();
+
+    //invalidate account id
+    const badIdAccount = allAccounts.get(testAccountId);
+    badIdAccount!.id = badIdAccount!.id.add(1);
+    await expect(async () => {
+      txn = await Mina.transaction(deployerAccount, () => {
+        zkApp.verifyAccount(badIdAccount!, path);
+      });
+      await txn.prove();
+      await txn.send();
+    }).rejects.toThrow(/Id/);
+
+    //invalidate path
+    let badPath = accountTree.getWitness(account!.id);
+    badPath.siblings[0] = badPath.siblings[0].add(1);
+    
+    await expect(async () => {
+      txn = await Mina.transaction(deployerAccount, () => {
+        zkApp.verifyAccount(account!, badPath);
+      });
+      await txn.prove();
+      await txn.send();
+    }).rejects.toThrow(/Root/);
+    
   });
 });
