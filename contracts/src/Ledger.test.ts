@@ -243,7 +243,6 @@ describe('Ledger', () => {
 
     const oldAccount = allAccounts.get(testAccountId);
     const updatedAccount = Account.from(testAccountId, [100, 100, 100, 0]);
-    console.log(oldAccount!.id.toString(), updatedAccount.id.toString());
     await expect(async () => {
       txn = await Mina.transaction(deployerAccount, () => {
         zkApp.updateAccount( oldAccount!,
