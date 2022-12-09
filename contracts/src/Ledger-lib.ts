@@ -9,11 +9,11 @@ import {
     Signature,
 } from 'snarkyjs';
 
-export const NumberOfTokens = 4;
-
-const MaxToken = 10e10;
+export const TokenNames = ['ETH', 'MATIC', 'USDC', 'BTC'];
+export const NumberOfTokens = TokenNames.length;
 
 type AccountBalance = {
+    [index: string]: number;
     id: number;
     ETH: number;
     MATIC: number;
@@ -39,6 +39,18 @@ export class Account extends Struct({
   
     hash() {
       return Poseidon.hash([this.id, this.balances].flat());
+    }
+
+    display(){
+        let result :{[index: string]: string;} = {
+            'UserID': this.id.toString(),
+        };
+
+        this.balances.forEach((v, i) =>{
+            result[TokenNames[i]] = v.toString(); 
+        });
+
+        return result;
     }
 }
 
@@ -78,8 +90,8 @@ export class TotalAccountBalances extends Struct({
 
     hash() {
         return Poseidon.hash(this.balances);
-    };
-};
+    }
+}
 
 export class OracleBalances extends Struct({
     balances: Circuit.array(Field, NumberOfTokens)    
@@ -98,7 +110,7 @@ export class OracleBalances extends Struct({
 
     hash() {
         return Poseidon.hash(this.balances);
-    };
+    }
 }
 
 export async function loadAccounts(fileName: string): Promise<AccountMap> {
@@ -106,11 +118,10 @@ export async function loadAccounts(fileName: string): Promise<AccountMap> {
     let balances : number[] = Array(NumberOfTokens).fill(0);
 
     return savedAccounts.reduce(function(map:AccountMap, account:AccountBalance) {
-        balances[0] = account.ETH;
-        balances[1] = account.MATIC;
-        balances[2] = account.USDC;
-        balances[3] = 1;
-
+        TokenNames.forEach((v, i) =>{
+            balances[i] = account[v];
+        });
+        
         map.set(account.id, Account.from(account.id, balances));
         return map;
     }, new Map<number, Account>());
@@ -131,12 +142,15 @@ function getRandomInt(max: number) {
 }
 
 export function generateRandomAccounts(amount: number){
+    const MaxToken = 10e10;
+
     return Array(amount).fill(0).map((_, i) => {
         return {
             id: 1000 + i,
             ETH: getRandomInt(MaxToken),
             MATIC: getRandomInt(MaxToken),
             USDC: getRandomInt(MaxToken),
+            BTC: 1,
         }
     });
 }

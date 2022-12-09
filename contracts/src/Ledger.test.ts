@@ -12,7 +12,7 @@ import {
 import {Ledger} from './Ledger';
 import {
     loadAccounts, 
-    Account, 
+    Account,
     AccountMap, 
     TotalAccountBalances,
     calcTotalBalances,
