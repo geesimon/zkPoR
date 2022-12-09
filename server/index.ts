@@ -29,6 +29,7 @@ const transactionFee = 100_000_000;
 const accountFileName = '../test-accounts.json';
 
 let allAccounts : AccountMap;
+let totalBalances : TotalAccountBalances;
 
 function getEnv(name:string, defaultValue:any) {
     return (typeof process.env[name] === 'undefined') ? defaultValue : process.env[name];
@@ -47,6 +48,7 @@ function getEnv(name:string, defaultValue:any) {
     Mina.setActiveInstance(Berkeley);
 
     allAccounts = await loadAccounts(accountFileName);
+    totalBalances = calcTotalBalances(allAccounts);
     console.log('Account Data Loaded');
     console.log('Done');
 })();
@@ -81,6 +83,7 @@ app.put('/account', (req, res) => {
     if (typeof account !== 'undefined'){
         const updatedAccount = makeAccount(accountJson);
         allAccounts.set(accountId, updatedAccount);
+        totalBalances = totalBalances.sub(account).add(updatedAccount);
 
         res.json(updatedAccount);
     } else {
@@ -97,13 +100,22 @@ app.post('/account/', (req, res) => {
     if (typeof account === 'undefined') {
         const newAccount = makeAccount(accountJson);
         allAccounts.set(accountId, newAccount);
-
+        totalBalances = totalBalances.add(newAccount);
         res.json(newAccount);
     } else {
         res.json({'Error': 'Account Already Exist'});
     }
 })
 
+app.get('/totalbalances', (req, res) => {    
+    res.json(totalBalances.display());
+})
+
+app.get('/oraclebalances', (req, res) => {
+})
+
+app.put('/oraclebalances', (req, res) => {
+})
 
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${port}`);

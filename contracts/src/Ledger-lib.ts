@@ -91,6 +91,16 @@ export class TotalAccountBalances extends Struct({
     hash() {
         return Poseidon.hash(this.balances);
     }
+
+    display() {
+        let result :{[index: string]: string;} = {};
+
+        this.balances.forEach((v, i) =>{
+            result[TokenNames[i]] = v.toString(); 
+        });
+
+        return result;
+    }
 }
 
 export class OracleBalances extends Struct({
