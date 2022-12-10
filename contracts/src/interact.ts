@@ -62,7 +62,8 @@ console.log('Tree Root:', zkApp.accountTreeRoot.get().toString());
 
 console.log('build transaction and create proof...');
 let tx = await Mina.transaction({ feePayerKey: deployerPrivateKey, fee: transactionFee }, () => {
-  // zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oraclePublicKey, oracleBalances.hash());
+  zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oraclePublicKey, oracleBalances.hash());
+
   const newAccountId = 2000;
   const newAccount = Account.from(newAccountId, [100, 100, 100, 10]);
   accountTree.set(Field(newAccountId), newAccount.hash());
