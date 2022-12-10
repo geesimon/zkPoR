@@ -1,69 +1,86 @@
-/**
- * This script can be used to interact with the Add contract, after deploying it.
- *
- * We call the update() method on the contract, create a proof and send it to the chain.
- * The endpoint that we interact with is read from your config.json.
- *
- * This simulates a user interacting with the zkApp from a browser, except that here, sending the transaction happens
- * from the script and we're using your pre-funded zkApp account to pay the transaction fee. In a real web app, the user's wallet
- * would send the transaction and pay the fee.
- *
- * To run locally:
- * Build the project: `$ npm run build`
- * Run with node:     `$ node build/src/interact.js <network>`.
- */
-import { Mina, PrivateKey, shutdown } from 'snarkyjs';
-import fs from 'fs/promises';
-import {Ledger} from './Ledger';
+import { 
+        Mina, 
+        PrivateKey, 
+        shutdown, 
+        isReady,
+        fetchAccount, 
+        Field,
+        PublicKey,
+      } from 'snarkyjs';
+import {Ledger} from './Ledger.js';
+import {
+  loadAccounts, 
+  Account,
+  AccountMap, 
+  TotalAccountBalances,
+  calcTotalBalances,
+  buildAccountMerkleTree,
+  OracleBalances} from './Ledger-lib'
 
-// check command line arg
-let network = process.argv[2];
-if (!network)
-  throw Error(`Missing <network> argument.
+import dotenv from 'dotenv';
 
-Usage:
-node build/src/interact.js <network>
+const accountFileName = "../test-accounts.json";
 
-Example:
-node build/src/interact.js berkeley
-`);
-Error.stackTraceLimit = 1000;
+function getEnv(name:string, defaultValue:any) {
+    return (typeof process.env[name] === 'undefined') ? defaultValue : process.env[name];
+}
 
-// parse config and private key from file
-type Config = { networks: Record<string, { url: string; keyPath: string }> };
-let configJson: Config = JSON.parse(await fs.readFile('config.json', 'utf8'));
-let config = configJson.networks[network];
-let key: { privateKey: string } = JSON.parse(
-  await fs.readFile(config.keyPath, 'utf8')
-);
-let zkAppKey = PrivateKey.fromBase58(key.privateKey);
+dotenv.config();
 
-// set up Mina instance and contract we interact with
-const Network = Mina.Network(config.url);
-Mina.setActiveInstance(Network);
-let zkAppAddress = zkAppKey.toPublicKey();
-let zkApp = new Ledger(zkAppAddress);
+console.log('Loading SnarkyJS...');
+await isReady;
+
+let allAccounts = await loadAccounts(accountFileName);
+let totalBalances = calcTotalBalances(allAccounts);
+let accountTree = buildAccountMerkleTree(allAccounts);    
+let oracleBalances = new OracleBalances(totalBalances.balances);
+//Set oracle balance as doule of account balance
+oracleBalances.balances.forEach((_, i) =>{
+  oracleBalances.balances[i] = oracleBalances.balances[i].mul(2);  
+});
+
+
+const NetworkUrl = getEnv('NETWORK_URL', 'https://proxy.berkeley.minaexplorer.com/graphql');
+const Berkeley = Mina.Network(NetworkUrl);
+Mina.setActiveInstance(Berkeley);
+
+let transactionFee = 100_000_000;
+
+const deployerPrivateKey = PrivateKey.fromBase58(getEnv('DEPLOYER_PRIVATE_KEY', ''));
+const zkAppPrivateKey = PrivateKey.fromBase58(getEnv('ZKAPP_PRIVATE_KEY', ''));
+const zkAppPublicKey = zkAppPrivateKey.toPublicKey();
+const oraclePublicKey = PublicKey.fromBase58(getEnv('ORACLE_PUBLIC_KEY', ''));
+
+let zkApp = new Ledger(zkAppPublicKey);
 
 // compile the contract to create prover keys
-console.log('compile the contract...');
+console.log('Compiling the contract...');
 await Ledger.compile();
 
-// call update() and send transaction
+await fetchAccount({publicKey:zkAppPublicKey});
+console.log('Tree Root:', zkApp.accountTreeRoot.get().toString());
+
 console.log('build transaction and create proof...');
-let tx = await Mina.transaction({ feePayerKey: zkAppKey, fee: 0.1e9 }, () => {
-  // zkApp.update();
+let tx = await Mina.transaction({ feePayerKey: deployerPrivateKey, fee: transactionFee }, () => {
+  // zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oraclePublicKey, oracleBalances.hash());
+  const newAccountId = 2000;
+  const newAccount = Account.from(newAccountId, [100, 100, 100, 10]);
+  accountTree.set(Field(newAccountId), newAccount.hash());
+  allAccounts.set(newAccountId, newAccount);
+
+  zkApp.addAccount( newAccount, 
+    accountTree.getWitness(Field(newAccountId)), 
+    totalBalances, 
+    oracleBalances );
 });
 await tx.prove();
-console.log('send transaction...');
+console.log('Send transaction...');
 let sentTx = await tx.send();
 
 if (sentTx.hash() !== undefined) {
-  console.log(`
-Success! Update transaction sent.
-
-Your smart contract state will be updated
-as soon as the transaction is included in a block:
-https://berkeley.minaexplorer.com/transaction/${sentTx.hash()}
-`);
+  console.log('Your smart contract state will be updated.',
+              'As soon as the transaction is included in a block:',
+              `https://berkeley.minaexplorer.com/transaction/${sentTx.hash()}`);
 }
+
 shutdown();
