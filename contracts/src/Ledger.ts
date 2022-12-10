@@ -1,5 +1,7 @@
 import {
     SmartContract,
+    DeployArgs,
+    Permissions,
     Field,
     state,
     State,
@@ -17,13 +19,13 @@ export class Ledger extends SmartContract {
     @state(PublicKey) oraclePublicKey = State<PublicKey>();
     @state(Field) oracleBalancesHash = State<Field>();
   
-    // deploy(args: DeployArgs) {
-    //     super.deploy(args);
-    //     this.setPermissions({
-    //       ...Permissions.default(),
-    //       editState: Permissions.proofOrSignature(),
-    //     });
-    // }
+    deploy(args: DeployArgs) {
+        super.deploy(args);
+        this.setPermissions({
+          ...Permissions.default(),
+          editState: Permissions.proofOrSignature(),
+        });
+    }
 
     @method initState(
             accountTreeRoot: Field,

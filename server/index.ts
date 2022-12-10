@@ -83,7 +83,7 @@ app.put('/account', (req, res) => {
     if (typeof account !== 'undefined'){
         const updatedAccount = makeAccount(accountJson);
         allAccounts.set(accountId, updatedAccount);
-        totalBalances = totalBalances.sub(account).add(updatedAccount);
+        totalBalances = totalBalances.sub(account, false).add(updatedAccount);
 
         res.json(updatedAccount);
     } else {

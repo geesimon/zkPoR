@@ -73,7 +73,7 @@ describe('Ledger', () => {
   async function localDeploy() {
     let txn = await Mina.transaction(deployerAccount, () => {
       AccountUpdate.fundNewAccount(deployerAccount);
-      zkApp.deploy();
+      zkApp.deploy({zkappKey: zkAppPrivateKey});
       zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oracleAccount.toPublicKey(), oracleBalances.hash());
     });
     await txn.prove();
