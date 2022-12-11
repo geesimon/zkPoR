@@ -91,7 +91,7 @@ import {
     const res = await transaction.send();
     const hash = await res.hash(); // This will change in a future version of SnarkyJS
     if (hash == null) {
-      console.log('error sending transaction (see above)');
+      throw('error sending transaction (see above)');
     } else {
       console.log(
         'See transaction at',
