@@ -49,7 +49,7 @@ function getEnv(name:string, defaultValue:any) {
 
     console.log('Sending the deploy transaction...');
     const res = await transaction.sign().send();
-    const hash = await res.hash();
+    const hash = res.hash();
     if (hash == null) {
         console.log('error sending transaction (see above)');
     } else {

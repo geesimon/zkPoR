@@ -2,11 +2,12 @@
   "name": "por-server",
   "version": "0.0.1",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/server/index.js",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/server/index.js\""
+    "start": "node dist/server/src/index.js",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/server/src/index.js\""
   },
   "keywords": [],
   "author": "",
