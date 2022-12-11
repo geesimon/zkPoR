@@ -82,9 +82,9 @@ import {
   
     // fill in the proof - this can take a while...
     console.log('Creating an execution proof...');
-    const time0 = Date.now();
+    let time0 = Date.now();
     await transaction.prove();
-    const time1 = Date.now();
+    let time1 = Date.now();
     console.log('creating proof took', (time1 - time0) / 1e3, 'seconds');
   
     console.log('Sending the transaction...');
@@ -101,10 +101,12 @@ import {
   
     let state = getState();
   
+    time0 = Date.now();
     let stateChanged = false;
     while (!stateChanged) {
       console.log(
-        'waiting for zkApp state to change... (current state: ',
+        (time1 - time0) / 1e3,
+        ' - Waiting for zkApp state to change... (current state: ',
         state.toString() + ')'
       );
       await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -112,6 +114,9 @@ import {
       state = await getState();
       stateChanged = !statesEqual(initialState, state);
     }
+
+    time1 = Date.now();
+    console.log('Change done in ', (time1 - time0) / 1e3, 'seconds');
   };
   
   // ========================================================
