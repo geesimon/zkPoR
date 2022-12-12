@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express } from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import {
@@ -79,28 +79,43 @@ function getEnv(name:string, defaultValue:any) {
       oracleBalances.balances[i] = oracleBalances.balances[i].mul(2);  
     });
    
-    console.log('Initializing smart contract...', zkAppPublicKey.toBase58());
-    await fetchAccount({publicKey:zkAppPublicKey});
-    console.log('Tree Root:', zkApp.accountTreeRoot.get().toString());
-
-    let transaction = await Mina.transaction(
-            { feePayerKey: deployerPrivateKey, fee: transactionFee },
-            () => {
-                zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oraclePublicKey, oracleBalances.hash());
-            }
-    );
-    await transaction.prove();
-    console.log('Sending initialization transaction...');
-    const res = await transaction.send();
-    const hash = res.hash();
-    if (hash == null) {
-        console.log('error sending transaction (see above)');
-    } else {
-        console.log(
-            'See deploy transaction at',
-            'https://berkeley.minaexplorer.com/transaction/' + hash
-        );
+    await fetchAccount({ publicKey: zkAppPublicKey });
+    if (!zkApp.accountTreeRoot.get().equals(accountTree.getRoot()).toBoolean()) {
+        console.log('Initializing smart contract...', zkAppPublicKey.toBase58());
+    
+        await makeAndSendTransaction({
+            feePayerPrivateKey: deployerPrivateKey,
+            zkAppPublicKey: zkAppPublicKey,
+            mutateZkApp: () =>  zkApp.initState( accountTree.getRoot(), 
+                                                totalBalances.hash(), 
+                                                oraclePublicKey, 
+                                                oracleBalances.hash()),
+            transactionFee: transactionFee,
+            getState: () => zkApp.accountTreeRoot.get(),
+            statesEqual: (num1, num2) => num1.equals(num2).toBoolean()
+        });    
     }
+    // await fetchAccount({publicKey:zkAppPublicKey});
+    // console.log('Tree Root:', zkApp.accountTreeRoot.get().toString());
+
+    // let transaction = await Mina.transaction(
+    //         { feePayerKey: deployerPrivateKey, fee: transactionFee },
+    //         () => {
+    //             zkApp.initState(accountTree.getRoot(), totalBalances.hash(), oraclePublicKey, oracleBalances.hash());
+    //         }
+    // );
+    // await transaction.prove();
+    // console.log('Sending initialization transaction...');
+    // const res = await transaction.send();
+    // const hash = res.hash();
+    // if (hash == null) {
+    //     console.log('error sending transaction (see above)');
+    // } else {
+    //     console.log(
+    //         'See deploy transaction at',
+    //         'https://berkeley.minaexplorer.com/transaction/' + hash
+    //     );
+    // }
 
     console.log('Done');
 })();
@@ -155,6 +170,7 @@ app.put('/account', async (req, res) => {
             accountTree.set(Field(accountId), updatedAccount.hash());
             totalBalances = totalBalances.sub(oldAccount!).add(updatedAccount);
 
+            res.json(updatedAccount.display());
         } catch (e){
             res.json({'Error': e});
             console.log(e)
@@ -165,7 +181,7 @@ app.put('/account', async (req, res) => {
 })
 
 // Add new account
-app.post('/account/', async (req, res) => {
+app.post('/account', async (req, res) => {
     const accountJson = req.body;
 
     const accountId = Number(accountJson["UserID"]);
@@ -175,7 +191,8 @@ app.post('/account/', async (req, res) => {
         // update transaction
         try {
             console.log("Building transaction and create proof for new account");
-            accountTree.set(Field(accountId), newAccount.hash());
+
+            allAccounts.set(accountId, newAccount);            
             await makeAndSendTransaction({
                 feePayerPrivateKey: deployerPrivateKey,
                 zkAppPublicKey: zkAppPublicKey,
@@ -188,7 +205,10 @@ app.post('/account/', async (req, res) => {
                 statesEqual: (num1, num2) => num1.equals(num2).toBoolean()
             });
 
-            res.json(newAccount);
+            accountTree.set(Field(accountId), newAccount.hash());
+            totalBalances = totalBalances.add(newAccount);
+
+            res.json(newAccount.display());
         } catch (e){
             //Todo: Rollback
             res.json({'Error': e});
@@ -204,9 +224,28 @@ app.get('/totalbalances', (req, res) => {
 })
 
 app.get('/oraclebalances', (req, res) => {
+    res.json(oracleBalances.display());
 })
 
-app.put('/oraclebalances', (req, res) => {
+app.put('/oraclebalances', async (req, res) => {
+    console.log(req.body);
+    const newOracleBalanceJson = req.body;
+
+    let newOracleBalance = new OracleBalances();
+
+    TokenNames.forEach((v, i) =>{
+        newOracleBalance.balances[i] = Field(newOracleBalanceJson[v]);
+    });
+    
+    //Check to make sure oracle balances match the hash stored in smart contract
+    await fetchAccount({ publicKey: zkAppPublicKey });
+    if (zkApp.oracleBalancesHash.get().equals(newOracleBalance.hash()).toBoolean()){
+        oracleBalances = newOracleBalance;
+
+        res.json(oracleBalances.display());
+    } else {
+        res.json({'Error':'Invalid Oracle Balances'});
+    }    
 })
 
 app.listen(port, () => {

@@ -74,9 +74,6 @@ import {
     // Why this line? It increments internal feePayer account variables, such as
     // nonce, necessary for successfully sending a transaction
     await fetchAccount({ publicKey: feePayerPrivateKey.toPublicKey() });
-
-    // Update zkApp cache    
-    await fetchAccount({ publicKey: zkAppPublicKey });
   
     let transaction = await Mina.transaction(
       { feePayerKey: feePayerPrivateKey, fee: transactionFee },
