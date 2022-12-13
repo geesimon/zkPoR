@@ -9,6 +9,8 @@ import {
   MerkleMapWitness,
   Field,
 } from 'snarkyjs';
+import { Ledger } from './Ledger';
+import {Account, TokenNames} from './Ledger-lib';
 
 const NetworkURL= 'https://proxy.berkeley.minaexplorer.com/graphql'
 const zkAppAddress = 'B62qkxEUpZptriUW45cdxurMy8VTs1U9LoiZiZe3WRsHLSCho6AhLbv';
@@ -23,7 +25,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       await isReady;
-      const { Ledger } = await import('../../contracts/build/src/Ledger');      
+      // const { Ledger } = await import('../../contracts/build/src/Ledger');      
 
       if (!zkAppAddress) {
         console.error(
@@ -46,7 +48,7 @@ export default function Home() {
     }, []);
 
   const handleVerification = async() =>{
-    const {Account, TokenNames} = await import('../../contracts/build/src/Ledger-lib');
+    // const {Account, TokenNames} = await import('../../contracts/build/src/Ledger-lib');
     const json = JSON.parse(status.merklePath)
     
     const accountJson = json['Account'];    
