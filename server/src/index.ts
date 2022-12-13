@@ -10,6 +10,7 @@ import {
     MerkleMap,
     fetchAccount,
     Field,
+    MerkleMapWitness,
 } from 'snarkyjs';
 import {
     loadAccounts,
@@ -122,9 +123,18 @@ function getEnv(name:string, defaultValue:any) {
 
 app.get('/account/:id', (req, res) => {
     const account = allAccounts.get(Number(req.params.id));
-
+    
     if (typeof account !== 'undefined'){
-        res.json(account.display());
+        const accountHash = account.hash();
+        const witness = accountTree.getWitness(account.id);
+
+        res.json({
+                    'Account': account.display(),
+                    'MerklePath': witness.toJSON(),
+                    'AccountHash': account.hash().toString(),
+                    'AccountMerkleRoot:': accountTree.getRoot().toString(),
+                    'MerklePathRoot': witness.computeRootAndKey(accountHash)[0].toString(),
+                });
     } else {
         res.json({'Error': 'No such user'});
     }
