@@ -96,7 +96,7 @@ export default function Home() {
       <main className={styles.main}>
         <p className={styles.description}>
           <label>
-            Input Account Merkel Path<br/>
+            Copy & Paste Account Merkel Path<br/>
             <textarea rows={50} cols ={80} onChange = {handleChange}/>
           </label>
           <br/>

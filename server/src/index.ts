@@ -13,7 +13,6 @@ import {
     MerkleMapWitness,
 } from 'snarkyjs';
 import {
-    loadAccounts,
     TokenNames,
     NumberOfTokens,
     Account, 
@@ -23,6 +22,7 @@ import {
     buildAccountMerkleTree,
     OracleBalances,
 } from './Ledger-lib.js';
+import {loadAccounts} from './account-utils.js';
 import {Ledger} from './Ledger.js';
 import {makeAndSendTransaction} from './utils.js'
 
