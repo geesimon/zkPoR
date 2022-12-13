@@ -33,7 +33,7 @@ const USDCETHAddress:string = getEnv('USDC_ETH_ADDRESS', '');
 const USDCPolygonAddress:string = getEnv('USDC_POLYGON_ADDRESS', '');
 
 const ServerURL:string = getEnv('SERVER_URL', 'http://localhost:8000');
-const TransactionFee = 100_000_000;
+const transactionFee = 100_000_000;
 const TokenReservesFileName = './tokens.json';
 
 let oraclePrivateKey : PrivateKey;
@@ -124,7 +124,7 @@ app.put('/update', async (req, res) => {
                 feePayerPrivateKey: oraclePrivateKey,
                 zkAppPublicKey: zkAppPublicKey,
                 mutateZkApp: () =>  zkApp.updateOracleBalance(oracleBalances, signature),
-                transactionFee: TransactionFee,
+                transactionFee: transactionFee,
                 getState: () => zkApp.oracleBalancesHash.get(),
                 statesEqual: (num1, num2) => num1.equals(num2).toBoolean()
             });
