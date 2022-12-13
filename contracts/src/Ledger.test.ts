@@ -13,10 +13,10 @@ import {Ledger} from './Ledger';
 import {
     Account,
     AccountMap, 
-    TotalAccountBalances,
-    calcTotalBalances,
+    TotalAccountBalance,
+    calcTotalBalance,
     buildAccountMerkleTree,
-    OracleBalances} from './Ledger-lib';
+    OracleBalance} from './Ledger-lib';
 import {loadAccounts} from './account-utils';
 
 const proofsEnabled = false;
@@ -29,8 +29,8 @@ describe('Ledger', () => {
     zkAppPrivateKey: PrivateKey,    
     zkApp: Ledger,
     allAccounts: AccountMap,
-    totalBalances: TotalAccountBalances,
-    oracleBalances: OracleBalances,
+    totalBalances: TotalAccountBalance,
+    oracleBalances: OracleBalance,
     accountTree: MerkleMap,
     testAccountId: number;
 
@@ -40,11 +40,11 @@ describe('Ledger', () => {
 
     //Load saved account data
     allAccounts = await loadAccounts(accountFileName);
-    totalBalances = calcTotalBalances(allAccounts);
+    totalBalances = calcTotalBalance(allAccounts);
     accountTree = buildAccountMerkleTree(allAccounts);    
     testAccountId = allAccounts.keys().next().value;
 
-    oracleBalances = new OracleBalances(totalBalances.balances);
+    oracleBalances = new OracleBalance(totalBalances.balances);
     //Set oracle balance as doule of account balance
     oracleBalances.balances.forEach((_, i) =>{
       oracleBalances.balances[i] = oracleBalances.balances[i].mul(2);  
@@ -118,7 +118,7 @@ describe('Ledger', () => {
     await txn.prove();
     await txn.send();
 
-    totalBalances = totalBalances.add(newAccount);
+    totalBalances = totalBalances.add(newAccount, false);
 
     const newRoot = zkApp.accountTreeRoot.get();
     expect(newRoot).toEqual(accountTree.getRoot());
@@ -142,8 +142,8 @@ describe('Ledger', () => {
     await txn.prove();
     await txn.send();
 
-    totalBalances = totalBalances.sub(oldAccount!).add(updatedAccount);
-    const newBalances = calcTotalBalances(allAccounts);
+    totalBalances = totalBalances.sub(oldAccount!, false).add(updatedAccount, false);
+    const newBalances = calcTotalBalance(allAccounts);
     expect(newBalances.hash()).toEqual(totalBalances.hash());
 
     const newAccoutTreeRoot = zkApp.accountTreeRoot.get();
@@ -189,7 +189,7 @@ describe('Ledger', () => {
   });
 
   it('takes and verifies oracle balances update', async () => {
-    const newOracleBalances = new OracleBalances();
+    const newOracleBalances = new OracleBalance();
 
     newOracleBalances.balances.forEach((_, i) => {
       newOracleBalances.balances[i] = oracleBalances.balances[i].add(10);
@@ -218,7 +218,7 @@ describe('Ledger', () => {
   });
 
   it('prevents from adding or updating account if balances exceed oracle balances', async () => {
-    const newOracleBalances = new OracleBalances();
+    const newOracleBalances = new OracleBalance();
 
     const signature = Signature.create(oracleAccount, newOracleBalances.balances);
 

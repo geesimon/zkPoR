@@ -89,7 +89,7 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Verify Account Inclusion</title>
+        <title>Account Inclusion Verification</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 

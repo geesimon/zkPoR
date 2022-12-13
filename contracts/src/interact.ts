@@ -10,9 +10,9 @@ import {
 import {Ledger} from './Ledger.js';
 import {
   Account,
-  calcTotalBalances,
+  calcTotalBalance,
   buildAccountMerkleTree,
-  OracleBalances} from './Ledger-lib'
+  OracleBalance} from './Ledger-lib'
 import {loadAccounts} from './account-utils';
 
 import dotenv from 'dotenv';
@@ -29,9 +29,9 @@ console.log('Loading SnarkyJS...');
 await isReady;
 
 let allAccounts = await loadAccounts(accountFileName);
-let totalBalances = calcTotalBalances(allAccounts);
+let totalBalances = calcTotalBalance(allAccounts);
 let accountTree = buildAccountMerkleTree(allAccounts);    
-let oracleBalances = new OracleBalances(totalBalances.balances);
+let oracleBalances = new OracleBalance(totalBalances.balances);
 //Set oracle balance as doule of account balance
 oracleBalances.balances.forEach((_, i) =>{
   oracleBalances.balances[i] = oracleBalances.balances[i].mul(2);  

@@ -3,6 +3,7 @@ import {
     shutdown,
     Mina,
     PrivateKey,
+    fetchAccount,
 } from 'snarkyjs';
 import {
     Ledger
@@ -30,6 +31,9 @@ function getEnv(name:string, defaultValue:any) {
     const deployerPrivateKey = PrivateKey.fromBase58(getEnv('DEPLOYER_PRIVATE_KEY', ''));
     const zkAppPrivateKey = PrivateKey.fromBase58(getEnv('ZKAPP_PRIVATE_KEY', ''));
     const zkAppPublicKey = zkAppPrivateKey.toPublicKey();
+    
+    await fetchAccount({ publicKey: deployerPrivateKey.toPublicKey() });
+    await fetchAccount({ publicKey: zkAppPublicKey });
 
     console.log('Compiling smart contract...');
     let { verificationKey } = await Ledger.compile();

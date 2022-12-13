@@ -10,17 +10,16 @@ import {
     MerkleMap,
     fetchAccount,
     Field,
-    MerkleMapWitness,
 } from 'snarkyjs';
 import {
     TokenNames,
     NumberOfTokens,
     Account, 
     AccountMap,    
-    TotalAccountBalances,
-    calcTotalBalances,
+    TotalAccountBalance,
+    calcTotalBalance,
     buildAccountMerkleTree,
-    OracleBalances,
+    OracleBalance,
 } from './Ledger-lib.js';
 import {loadAccounts} from './account-utils.js';
 import {Ledger} from './Ledger.js';
@@ -36,11 +35,11 @@ const NetworkURL:string = getEnv('NETWORK_URL', 'https://proxy.berkeley.minaexpl
 const transactionFee = 100_000_000;
 const accountFileName = '../test-accounts.json';
 
-let allAccounts : AccountMap;
+let allAccount : AccountMap;
 let accountTree: MerkleMap;
-let totalBalances : TotalAccountBalances;
+let totalBalance : TotalAccountBalance;
 
-let oracleBalances: OracleBalances;
+let oracleBalance: OracleBalance;
 
 let deployerPrivateKey : PrivateKey;
 let oraclePublicKey : PublicKey;
@@ -71,13 +70,13 @@ function getEnv(name:string, defaultValue:any) {
     Mina.setActiveInstance(Berkeley);
 
     console.log('Loading saved accounts...');
-    allAccounts = await loadAccounts(accountFileName);
-    totalBalances = calcTotalBalances(allAccounts);
-    accountTree = buildAccountMerkleTree(allAccounts);
-    oracleBalances = new OracleBalances(totalBalances.balances);
+    allAccount = await loadAccounts(accountFileName);
+    totalBalance = calcTotalBalance(allAccount);
+    accountTree = buildAccountMerkleTree(allAccount);
+    oracleBalance = new OracleBalance(totalBalance.balances);
     //Set oracle balance as doule of account balance
-    oracleBalances.balances.forEach((_, i) =>{
-      oracleBalances.balances[i] = oracleBalances.balances[i].mul(2);  
+    oracleBalance.balances.forEach((_, i) =>{
+      oracleBalance.balances[i] = oracleBalance.balances[i].mul(2);  
     });
    
     await fetchAccount({ publicKey: zkAppPublicKey });
@@ -88,9 +87,9 @@ function getEnv(name:string, defaultValue:any) {
             feePayerPrivateKey: deployerPrivateKey,
             zkAppPublicKey: zkAppPublicKey,
             mutateZkApp: () =>  zkApp.initState( accountTree.getRoot(), 
-                                                totalBalances.hash(), 
+                                                totalBalance.hash(), 
                                                 oraclePublicKey, 
-                                                oracleBalances.hash()),
+                                                oracleBalance.hash()),
             transactionFee: transactionFee,
             getState: () => zkApp.accountTreeRoot.get(),
             statesEqual: (num1, num2) => num1.equals(num2).toBoolean()
@@ -122,7 +121,7 @@ function getEnv(name:string, defaultValue:any) {
 })();
 
 app.get('/account/:id', (req, res) => {
-    const account = allAccounts.get(Number(req.params.id));
+    const account = allAccount.get(Number(req.params.id));
     
     if (typeof account !== 'undefined'){
         const accountHash = account.hash();
@@ -156,7 +155,7 @@ app.put('/account', async (req, res) => {
     const accountJson = req.body;
 
     const accountId = Number(accountJson["UserID"]);
-    const oldAccount = allAccounts.get(accountId);
+    const oldAccount = allAccount.get(accountId);
     if (typeof oldAccount !== 'undefined'){
         const updatedAccount = makeAccount(accountJson);
         
@@ -169,16 +168,16 @@ app.put('/account', async (req, res) => {
                 mutateZkApp: () =>  zkApp.updateAccount( oldAccount,
                                                         accountTree.getWitness(Field(accountId)), 
                                                         updatedAccount,
-                                                        totalBalances,
-                                                        oracleBalances),
+                                                        totalBalance,
+                                                        oracleBalance),
                 transactionFee: transactionFee,
                 getState: () => zkApp.accountTreeRoot.get(),
                 statesEqual: (num1, num2) => num1.equals(num2).toBoolean()
             });
 
-            allAccounts.set(accountId, updatedAccount);
+            allAccount.set(accountId, updatedAccount);
             accountTree.set(Field(accountId), updatedAccount.hash());
-            totalBalances = totalBalances.sub(oldAccount!).add(updatedAccount);
+            totalBalance = totalBalance.sub(oldAccount!).add(updatedAccount);
 
             res.json(updatedAccount.display());
         } catch (e){
@@ -195,28 +194,28 @@ app.post('/account', async (req, res) => {
     const accountJson = req.body;
 
     const accountId = Number(accountJson["UserID"]);
-    const account = allAccounts.get(accountId);
+    const account = allAccount.get(accountId);
     if (typeof account === 'undefined') {
         const newAccount = makeAccount(accountJson);        
         // update transaction
         try {
             console.log("Building transaction and create proof for new account");
 
-            allAccounts.set(accountId, newAccount);            
+            allAccount.set(accountId, newAccount);            
             await makeAndSendTransaction({
                 feePayerPrivateKey: deployerPrivateKey,
                 zkAppPublicKey: zkAppPublicKey,
                 mutateZkApp: () =>  zkApp.addAccount( newAccount, 
                                                     accountTree.getWitness(Field(accountId)), 
-                                                    totalBalances,
-                                                    oracleBalances ),
+                                                    totalBalance,
+                                                    oracleBalance ),
                 transactionFee: transactionFee,
                 getState: () => zkApp.accountTreeRoot.get(),
                 statesEqual: (num1, num2) => num1.equals(num2).toBoolean()
             });
 
             accountTree.set(Field(accountId), newAccount.hash());
-            totalBalances = totalBalances.add(newAccount);
+            totalBalance = totalBalance.add(newAccount);
 
             res.json(newAccount.display());
         } catch (e){
@@ -230,18 +229,18 @@ app.post('/account', async (req, res) => {
 })
 
 app.get('/totalbalances', (req, res) => {    
-    res.json(totalBalances.display());
+    res.json(totalBalance.display());
 })
 
 app.get('/oraclebalances', (req, res) => {
-    res.json(oracleBalances.display());
+    res.json(oracleBalance.display());
 })
 
 app.put('/oraclebalances', async (req, res) => {
     console.log(req.body);
     const newOracleBalanceJson = req.body;
 
-    let newOracleBalance = new OracleBalances();
+    let newOracleBalance = new OracleBalance();
 
     TokenNames.forEach((v, i) =>{
         newOracleBalance.balances[i] = Field(newOracleBalanceJson[v]);
@@ -250,9 +249,9 @@ app.put('/oraclebalances', async (req, res) => {
     //Check to make sure oracle balances match the hash stored in smart contract
     await fetchAccount({ publicKey: zkAppPublicKey });
     if (zkApp.oracleBalancesHash.get().equals(newOracleBalance.hash()).toBoolean()){
-        oracleBalances = newOracleBalance;
+        oracleBalance = newOracleBalance;
 
-        res.json(oracleBalances.display());
+        res.json(oracleBalance.display());
     } else {
         res.json({'Error':'Invalid Oracle Balances'});
     }    

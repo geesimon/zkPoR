@@ -12,7 +12,7 @@ import {
     Signature,
 } from 'snarkyjs';
 import {
-    OracleBalances,
+    OracleBalance,
 } from './Ledger-lib.js';
 import {Ledger} from './Ledger.js';
 import {makeAndSendTransaction} from './utils.js';
@@ -45,7 +45,7 @@ function getEnv(name:string, defaultValue:any) {
 }
 
 async function retreiveBalances(tokenReservesFileName: string){
-    let tokenBalances = new OracleBalances();
+    let tokenBalance = new OracleBalance();
 
     const tokenAddresses = JSON.parse(
         await fs.readFile(tokenReservesFileName, 'utf8')
@@ -54,35 +54,35 @@ async function retreiveBalances(tokenReservesFileName: string){
     const ethETHAddresses = tokenAddresses['ETH']['ETH'] as string[];
     if ( ethETHAddresses !== undefined) {
         for (const address of ethETHAddresses){
-            tokenBalances.balances[0] = tokenBalances.balances[0].add(await getETHBalance(ETHNetworkURL, address));
+            tokenBalance.balances[0] = tokenBalance.balances[0].add(await getETHBalance(ETHNetworkURL, address));
         }
     }
 
     const ethUSDCAddresses = tokenAddresses['ETH']['USDC'] as string[];
     if ( ethUSDCAddresses !== undefined){
         for (const address of ethUSDCAddresses){
-            tokenBalances.balances[2] = tokenBalances.balances[2].add(await getUSDCBalance(ETHNetworkURL, USDCETHAddress, address));
+            tokenBalance.balances[2] = tokenBalance.balances[2].add(await getUSDCBalance(ETHNetworkURL, USDCETHAddress, address));
         }
     }
     //Retrieve POLYGON Balances
     const polygonETHAddresses = tokenAddresses['POLYGON']['MATIC'] as string[];
     if ( polygonETHAddresses !== undefined){
         for (const address of polygonETHAddresses){
-            tokenBalances.balances[1] = tokenBalances.balances[1].add(await getETHBalance(PolygonNetworkURL, address));
+            tokenBalance.balances[1] = tokenBalance.balances[1].add(await getETHBalance(PolygonNetworkURL, address));
         }
     }
 
     const polygonUSDCAddresses = tokenAddresses['POLYGON']['USDC'] as string[];
     if ( polygonUSDCAddresses !== undefined){
         for (const address of polygonUSDCAddresses){
-            tokenBalances.balances[2] = tokenBalances.balances[2].add(await getUSDCBalance(PolygonNetworkURL, USDCPolygonAddress, address));
+            tokenBalance.balances[2] = tokenBalance.balances[2].add(await getUSDCBalance(PolygonNetworkURL, USDCPolygonAddress, address));
         }
     }
 
     //Set BTC to 1000 (for debugging purpose)
-    tokenBalances.balances[3] = Field(1000);
+    tokenBalance.balances[3] = Field(1000);
 
-    return tokenBalances;
+    return tokenBalance;
 }
 
 (async function InitMina() {

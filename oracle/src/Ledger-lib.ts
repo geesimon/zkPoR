@@ -38,7 +38,7 @@ export class Account extends Struct({
     }
 }
 
-export class TotalAccountBalances extends Struct({
+export class TotalAccountBalance extends Struct({
     balances: Circuit.array(Field, NumberOfTokens)    
 }){
     constructor(balances?: Field[]) {
@@ -49,24 +49,30 @@ export class TotalAccountBalances extends Struct({
         }
     }
 
-    add(account: Account){
-        let newBalances = new TotalAccountBalances();
+    add(account: Account, checkConstraint = true){
+        let newBalances = new TotalAccountBalance();
                 
         account.balances.forEach((v, i) =>{
             newBalances.balances[i] = this.balances[i].add(v);
+            if (checkConstraint){
+                newBalances.balances[i].assertGte(this.balances[i]); //overflow check
+            }
         })
 
         return newBalances;
     };
 
     sub(account: Account, checkConstraint = true){
-        let newBalances = new TotalAccountBalances();
+        let newBalances = new TotalAccountBalance();
 
         account.balances.forEach((v, i) =>{
             if (checkConstraint) {
                 this.balances[i].assertGte(v);
             }
             newBalances.balances[i] = this.balances[i].sub(v);
+            if (checkConstraint){
+                newBalances.balances[i].assertLte(this.balances[i]); //overflow check
+            }            
         })
 
         return newBalances;
@@ -87,7 +93,7 @@ export class TotalAccountBalances extends Struct({
     }
 }
 
-export class OracleBalances extends Struct({
+export class OracleBalance extends Struct({
     balances: Circuit.array(Field, NumberOfTokens)    
 }){
     constructor(balances?: Field[]) {
@@ -117,14 +123,14 @@ export class OracleBalances extends Struct({
     }
 }
 
-export function calcTotalBalances(accounts: AccountMap) {
-    let totalBalances = new TotalAccountBalances();
+export function calcTotalBalance(accounts: AccountMap) {
+    let totalBalance = new TotalAccountBalance();
 
     accounts.forEach(account =>{
-        totalBalances = totalBalances.add(account);
+        totalBalance = totalBalance.add(account, false);
     });
 
-    return totalBalances;
+    return totalBalance;
 }
 
 

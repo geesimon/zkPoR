@@ -1,5 +1,5 @@
 import {
-        calcTotalBalances,
+        calcTotalBalance,
         buildAccountMerkleTree,
         Account
         } from './Ledger-lib.js'
@@ -20,7 +20,7 @@ console.log("balance_2:", accounts.get(accoundId)!.balances[2].toString());
 console.log("hash:", accounts.get(accoundId)!.hash().toString());
 
 console.log("==========================Test Balance Calculation");
-let totalBalances = calcTotalBalances(accounts);
+let totalBalances = calcTotalBalance(accounts);
 console.log("total_balance_1:", totalBalances.balances[0].toString());
 console.log("total_balance_2:", totalBalances.balances[1].toString());
 console.log("total_balance_3:", totalBalances.balances[2].toString());

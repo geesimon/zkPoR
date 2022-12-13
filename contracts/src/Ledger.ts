@@ -10,7 +10,7 @@ import {
     MerkleMapWitness,
     Signature,
   } from 'snarkyjs';
-import {Account, TotalAccountBalances, OracleBalances } from './Ledger-lib';
+import {Account, TotalAccountBalance, OracleBalance } from './Ledger-lib';
 
 
 export class Ledger extends SmartContract {        
@@ -42,8 +42,8 @@ export class Ledger extends SmartContract {
     @method addAccount(
                         account: Account, 
                         path: MerkleMapWitness,
-                        totalAccountBalances: TotalAccountBalances,
-                        oracleBalances: OracleBalances
+                        totalAccountBalance: TotalAccountBalance,
+                        oracleBalance: OracleBalance
                         ) {
         // Add account
         const currentRoot = this.accountTreeRoot.get();
@@ -55,20 +55,20 @@ export class Ledger extends SmartContract {
         // Update balance
         const currentBalancesHash = this.totalBalancesHash.get();
         this.totalBalancesHash.assertEquals(currentBalancesHash);
-        this.totalBalancesHash.assertEquals(totalAccountBalances.hash());
+        this.totalBalancesHash.assertEquals(totalAccountBalance.hash());
 
-        const newBalances =  totalAccountBalances.add(account);
+        const newBalances =  totalAccountBalance.add(account);
         this.totalBalancesHash.set(newBalances.hash());
         
-        this.checkBalances(oracleBalances, totalAccountBalances);
+        this.checkBalance(oracleBalance, totalAccountBalance);
     }
 
     @method updateAccount(
                             oldAcount: Account,
                             oldPath: MerkleMapWitness,
                             updatedAccount: Account,
-                            totalAccountBalances: TotalAccountBalances,
-                            oracleBalances: OracleBalances
+                            totalAccountBalance: TotalAccountBalance,
+                            oracleBalance: OracleBalance
                         ) {
         //Account id must be the same
         oldAcount.id.assertEquals(updatedAccount.id);
@@ -85,13 +85,13 @@ export class Ledger extends SmartContract {
         //Update total balances
         const currentBalancesHash = this.totalBalancesHash.get();
         this.totalBalancesHash.assertEquals(currentBalancesHash);
-        this.totalBalancesHash.assertEquals(totalAccountBalances.hash());
+        this.totalBalancesHash.assertEquals(totalAccountBalance.hash());
 
-        let newBalances = totalAccountBalances.sub(oldAcount).add(updatedAccount);
+        let newBalances = totalAccountBalance.sub(oldAcount).add(updatedAccount);
         
         this.totalBalancesHash.set(newBalances.hash());
 
-        this.checkBalances(oracleBalances, totalAccountBalances);
+        this.checkBalance(oracleBalance, totalAccountBalance);
     }
 
     @method verifyAccount(account: Account, path: MerkleMapWitness) {
@@ -104,25 +104,25 @@ export class Ledger extends SmartContract {
         root.assertEquals(currentRoot, 'Invalid Merkel Root');
     }
 
-    @method updateOracleBalance(oracleBalances: OracleBalances, signature: Signature) {
+    @method updateOracleBalance(oracleBalance: OracleBalance, signature: Signature) {
         const oraclePublicKey = this.oraclePublicKey.get();
         this.oraclePublicKey.assertEquals(oraclePublicKey);
 
-        const validSignature = oracleBalances.verify(oraclePublicKey, signature);
+        const validSignature = oracleBalance.verify(oraclePublicKey, signature);
         validSignature.assertTrue('Bad Signature');
 
-        this.oracleBalancesHash.set(oracleBalances.hash());
+        this.oracleBalancesHash.set(oracleBalance.hash());
     }
 
     // Check Oracle balance constraint
-    checkBalances(oracleBalances: OracleBalances, totalAccountBalances: TotalAccountBalances){
+    checkBalance(oracleBalance: OracleBalance, totalAccountBalance: TotalAccountBalance){
        //Check account balances are less than oracle balances
        const oracleBalancesHash = this.oracleBalancesHash.get();
        this.oracleBalancesHash.assertEquals(oracleBalancesHash);
-       this.oracleBalancesHash.assertEquals(oracleBalances.hash());
+       this.oracleBalancesHash.assertEquals(oracleBalance.hash());
 
-       oracleBalances.balances.forEach((_, i) => {
-           oracleBalances.balances[i].assertGte(totalAccountBalances.balances[i], 'Account Value Exceed Oracle Value:' );
+       oracleBalance.balances.forEach((_, i) => {
+           oracleBalance.balances[i].assertGte(totalAccountBalance.balances[i], 'Account Value Exceed Oracle Value:' );
        })        
     }
 }
