@@ -3,8 +3,6 @@ import {
     shutdown,
     Mina,
     PrivateKey,
-    AccountUpdate,
-    VerificationKey
 } from 'snarkyjs';
 import {
     Ledger

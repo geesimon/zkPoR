@@ -1,11 +1,10 @@
 import {
-        generateRandomAccountsFile, 
-        loadAccounts, 
         calcTotalBalances,
         buildAccountMerkleTree,
         Account
         } from './Ledger-lib.js'
 import { Field } from 'snarkyjs';        
+import {generateRandomAccountsFile, loadAccounts} from './account-utils';
 
 const accountFileName = "../test-accounts.json";
 

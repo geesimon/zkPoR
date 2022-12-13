@@ -9,13 +9,11 @@ import {
       } from 'snarkyjs';
 import {Ledger} from './Ledger.js';
 import {
-  loadAccounts, 
   Account,
-  AccountMap, 
-  TotalAccountBalances,
   calcTotalBalances,
   buildAccountMerkleTree,
   OracleBalances} from './Ledger-lib'
+import {loadAccounts} from './account-utils';
 
 import dotenv from 'dotenv';
 

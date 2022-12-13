@@ -11,13 +11,13 @@ import {
 } from 'snarkyjs';
 import {Ledger} from './Ledger';
 import {
-    loadAccounts, 
     Account,
     AccountMap, 
     TotalAccountBalances,
     calcTotalBalances,
     buildAccountMerkleTree,
-    OracleBalances} from './Ledger-lib'
+    OracleBalances} from './Ledger-lib';
+import {loadAccounts} from './account-utils';
 
 const proofsEnabled = false;
 const accountFileName = "../test-accounts.json";
