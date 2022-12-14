@@ -7,6 +7,8 @@ This Next based web UI provide end user a tool to verify account inclusion in th
 
 If user's account info is included in Merkle tree, the verification will succeed. 
 
+Note: since we only need to verify Merkle tree inclusion, i.e., `witness.computeRootAndKey(userhash) === AccountMerkleRoot`. We don't need to compute proof and send transaction. Therefore, this verification is pretty fast. User also don't need to install Auro wallet.
+
 # How to run 
 ```sh
 npm run build && npm run start
