@@ -4,6 +4,7 @@ This server is supposed to be run by CEX internally to update smart contract per
 
 # How to build
 ```sh
+npm install
 npm run build
 ```
 
