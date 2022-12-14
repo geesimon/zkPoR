@@ -31,7 +31,7 @@ npm run start
 Current implementation is to demonstrate the technical feasibility of using zkApp to update user account balance. Thus, we don’t spend time working on securing the server access, making the server more reliable and scalable. For production usage, a re-architecture is needed.
 
 # Demo Server
-http://server.zkpor.app
+server.zkpor.app
 
 # License
 [Apache-2.0](LICENSE)
