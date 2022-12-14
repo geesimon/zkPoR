@@ -1,4 +1,4 @@
-# Mina zkApp: Contracts
+# zkPoR: Contracts
 
 This template uses TypeScript.
 
