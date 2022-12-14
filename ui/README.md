@@ -19,7 +19,10 @@ https://zkpor.app
 
 To find the user balance and merkle path,
 - Use the content in [test.json](test.json) (user id: 1000), or
-- Use demo server: http://server.zkpor.app/1001
+- Use demo server 
+```sh
+curl http://server.zkpor.app/1001
+```
 
 # License
 [Apache-2.0](LICENSE)
