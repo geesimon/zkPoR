@@ -28,7 +28,7 @@ npm run start
 - `POLYGON`: MATIC, USDC
 
 # Demo Server
-http://oracle.zkpor.app
+oracle.zkpor.app
 
 # License
 [Apache-2.0](LICENSE)
