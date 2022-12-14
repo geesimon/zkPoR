@@ -5,6 +5,7 @@ The smart contract `Ledger` has logic to update account Merkle tree and make sur
 # How to build
 
 ```sh
+npm install
 npm run build
 ```
 
