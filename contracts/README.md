@@ -15,14 +15,14 @@ npm run test
 npm run testw # watch mode
 ```
 
-## How to make deployment
+## How to make deployment (Berkeley)
 
 - Create an Mina account for zkPoR (this account will be used to store this zkApp)
 - Run
 ```sh
 cp .env.example .env
 ```
-- Change private and public keys in .env
+- Change private and public keys settings in .env
 - Run
 ```sh
 node  --experimental-specifier-resolution=node build/src/deploy.js
