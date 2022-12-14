@@ -22,6 +22,10 @@ npm run start
 - `/`(GET): retrieve token balances per `tokens.json`.
 - `/update` (PUT): retrieve token balances and update smart contract and server.
 
+# Supported Chains and Tokens
+- `ETH`: ETH, USDC
+- `POLYGON`: MATIC, USDC
+
 # Demo Server
 http://oracle.zkpor.app
 
