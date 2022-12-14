@@ -1,6 +1,6 @@
-# Mina zkApp: Contracts
+# zkPoR: Contracts
 
-This template uses TypeScript.
+The smart contract `Ledger` has logic to update account Merkle tree and make sure the accumulated balances don't exceed the amount provided by Oracle.
 
 ## How to build
 
@@ -19,6 +19,11 @@ npm run testw # watch mode
 
 ```sh
 npm run coverage
+```
+
+## How to make contract deployment
+```sh
+node build/src/deploy.js
 ```
 
 ## License
