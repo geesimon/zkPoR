@@ -3,6 +3,7 @@ This oracle server is supposed to be run by 3rd party (auditor) periodically to 
 
 # How to build
 ```sh
+npm install
 npm run build
 ```
 
