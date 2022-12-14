@@ -22,7 +22,7 @@ npm run testw # watch mode
 ```sh
 cp .env.example .env
 ```
-- Change private and public keys settings in .env
+- Update private and public keys settings in .env
 - Run
 ```sh
 node  --experimental-specifier-resolution=node build/src/deploy.js
