@@ -14,6 +14,7 @@ npm run build
 cp .env.example .env
 ```
 - Update private and public keys settings in .env
+- Update [test-accounts.json](../test-accounts.json) with initial account settings
 - Run
 ```sh
 npm run start
