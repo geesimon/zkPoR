@@ -1,6 +1,6 @@
 # zkPoR: Contracts
 
-The smart contract `Ledger` has logic to update account Merkle tree and make sure the accumulated balances don't exceed the amount provided by Oracle.
+The smart contract `Ledger` has logic to update account Merkle tree and make sure the accumulated balances don't exceed the amount provided by [Oracle](https://github.com/geesimon/zkPoR/tree/main/oracle).
 
 ## How to build
 
@@ -15,15 +15,17 @@ npm run test
 npm run testw # watch mode
 ```
 
-## How to run coverage
+## How to make deployment
 
+- Create an Mina account for zkPoR (this account will be used to store this zkApp)
+- Run
 ```sh
-npm run coverage
+cp .env.example .env
 ```
-
-## How to make contract deployment
+- Change private and public keys in .env
+- Run
 ```sh
-node build/src/deploy.js
+node  --experimental-specifier-resolution=node build/src/deploy.js
 ```
 
 ## License
