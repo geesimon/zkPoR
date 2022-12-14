@@ -23,7 +23,7 @@ npm run start
 - `/account` (POST): add new account
 - `/account` (PUT): update account
 - `/totalbalances`(GET): retrieve accumulated balances for all users
-- `/oraclebalances`(GET): retrieve oracle balances
+- `/oraclebalances`(GET): retrieve oracle balances (updated by Oracle)
 - `/oraclebalances`(PUT): update oracle balances (called by Oracle)
 
 # Please Note
