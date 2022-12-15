@@ -27,6 +27,9 @@ export class Ledger extends SmartContract {
         });
     }
 
+    /**
+        @dev test only and need to restrict access to this method in production.
+    */
     @method initState(
             accountTreeRoot: Field,
             totalBalancesHash: Field,            
