@@ -24,3 +24,6 @@ Smart contract guarantees the update logic is done correctly, but it won’t pre
 
 ## Proof of Asset 
 The Oracle currently blindly trust the published addresses are owned by CEX. It is possible to build another smart contract that ask CEX proves the ownership of these addresses (has private keys to the address’s public key)
+
+## Performance
+For single account new/update, it takes ~1 minute to produce proof and another ~3 minute to finalize the block. This means every update will take about 5 minutes to finish. We will need to focus on improving the performance in the future release to make this app more practical.
